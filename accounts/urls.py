@@ -1,35 +1,17 @@
-from sqlalchemy import inspect
-from datetime import datetime
-from flask_validator import ValidateEmail, ValidateString, ValidateCountry
-from sqlalchemy.orm import validates
+from flask import request
 
-from .. import db # from __init__.py
+from ..app import app
+from .controllers import list_all_accounts_controller, create_account_controller, retrieve_account_controller, update_account_controller, delete_account_controller
 
-class Account(db.Model):
-    id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
-    created      = db.Column(db.DateTime(timezone=True), default=datetime.now)                           # The Date of the Instance Creation => Created one Time when Instantiation
-    updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)    # The Date of the Instance Update => Changed with Every Update
+@app.route("/accounts", methods=['GET', 'POST'])
+def list_create_accounts():
+    if request.method == 'GET': return list_all_accounts_controller()
+    if request.method == 'POST': return create_account_controller()
+    else: return 'Method is Not Allowed'
 
-    # user input
-    email = db.Column(db.String(100), nullable=false, unique=True)
-    username = db.Column(db.String(100), nullable=false)
-    dob = db.Column(db.Date)
-    country = db.Column(db.String(100))
-    phone_number = db.Column(db.String(20))
-
-    @classmethod
-    def __declare__last__(cls):
-        ValidateEmail(Account.email, True, True, "The email is not valid. Please check it") # True => Allow internationalized addresses, True => Check domain name resolution.)
-        ValidateString(Account.username, True, True, "The username type must be string")
-        ValidateCountry(Account.country, True, True, "The country is not valid")
-
-    @validates('username')
-    def empty_string_to_null(self, key, value):
-        if isinstance(value, str) and value == '': return None
-        else: return value
-
-    def toDict(self):
-        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs }
-
-    def __repr__(self):
-        return "<%r>" % self.email
+@app.route("/accounts/<account_id>", methods=['GET', 'PUT', 'DELETE'])
+def retrieve_update_destroy_account(account_id):
+    if request.method == 'GET': return retrieve_account_controller(account_id)
+    if request.method == 'PUT': return update_account_controller(account_id)
+    if request.method == 'DELETE': return delete_account_controller(account_id)
+    else: return 'Method is Not Allowed'
